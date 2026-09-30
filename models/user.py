@@ -1,42 +1,22 @@
-from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from .base import BaseModel
 from passlib.context import CryptContext
-from datetime import datetime, timedelta, timezone
-import jwt
-from config.environment import JWT_SECRET
+
+from .base import BaseModel
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-class UserModel(BaseModel):
 
+class UserModel(BaseModel):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True)  # Each username must be unique
-    email = Column(String, unique=True)  # Each email must be unique
+    username = Column(String, nullable=False, unique=True)
+    email = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=True)
-    role = Column(String, nullable=False, default="user")
 
-    # relationships
     teas = relationship("TeaModel", back_populates="user")
 
-
-    def set_password(self, plain_txt_password: str):
-        self.password = pwd_context.hash(plain_txt_password)
-
-    def verify_password(self, plain_txt_password: str) -> bool:
-        return pwd_context.verify(plain_txt_password, self.password)
-
-    def generate_token(self):
-        payload = {
-        "exp": datetime.now(timezone.utc) + timedelta(days=1),  # Expiration time (1 day)
-        "iat": datetime.now(timezone.utc),  # Issued at time
-        "sub": str(self.id),  # Subject - the user ID
-        "is_admin": self.role == "admin",
-        "username": self.username
-        }
-
-        token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-
-        return token
+    def set_password(self, password: str):
+        self.password = pwd_context.hash(password)
